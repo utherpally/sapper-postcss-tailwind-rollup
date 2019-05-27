@@ -6,10 +6,28 @@ import babel from 'rollup-plugin-babel';
 import { terser } from 'rollup-plugin-terser';
 import config from 'sapper/config/rollup.js';
 import pkg from './package.json';
-
+import getPreprocessor from 'svelte-preprocess'
+import postcss from 'rollup-plugin-postcss'
+import path from 'path'
 const mode = process.env.NODE_ENV;
 const dev = mode === 'development';
 const legacy = !!process.env.SAPPER_LEGACY_BUILD;
+
+
+const postcssPlugins = [
+	require("postcss-import")(),
+	require("postcss-url")(),
+	require("tailwindcss")("./tailwind.config.js"),
+	require("autoprefixer")({ browsers: "last 3 version" })
+]
+
+const preprocess = getPreprocessor({
+	transformers: {
+		postcss: {
+			plugins: postcssPlugins
+		}
+	}
+});
 
 export default {
 	client: {
@@ -23,7 +41,8 @@ export default {
 			svelte({
 				dev,
 				hydratable: true,
-				emitCss: true
+				emitCss: true,
+				preprocess
 			}),
 			resolve(),
 			commonjs(),
@@ -64,7 +83,11 @@ export default {
 				dev
 			}),
 			resolve(),
-			commonjs()
+			commonjs(),
+			postcss({
+				plugins: postcssPlugins,
+				extract: path.resolve(__dirname, './static/global.css')
+			})
 		],
 		external: Object.keys(pkg.dependencies).concat(
 			require('module').builtinModules || Object.keys(process.binding('natives'))

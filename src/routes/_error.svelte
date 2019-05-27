@@ -7,7 +7,7 @@
 
 <style>
 	h1, p {
-		margin: 0 auto;
+		@apply mx-auto my-0;
 	}
 
 	h1 {
