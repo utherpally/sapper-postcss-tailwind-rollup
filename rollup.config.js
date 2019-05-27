@@ -13,18 +13,42 @@ const mode = process.env.NODE_ENV;
 const dev = mode === 'development';
 const legacy = !!process.env.SAPPER_LEGACY_BUILD;
 
+class SvelteExtractor {
+	static extract(content) {
+		return content.match(/[A-Za-z0-9-_:\/]+/g) || [];
+	}
+}
 
-const postcssPlugins = [
-	require("postcss-import")(),
-	require("postcss-url")(),
-	require("tailwindcss")("./tailwind.config.js"),
-	require("autoprefixer")({ browsers: "last 3 version" })
-]
+
+const postcssPlugins = (purgecss=false) => {
+	return [
+		require("postcss-import")(),
+		require("postcss-url")(),
+		require("tailwindcss")("./tailwind.config.js"),
+		require("autoprefixer")({ browsers: "last 3 version" }),
+		// Do not purge the CSS in dev mode to be able to play with classes in the browser dev-tools.
+		purgecss &&
+				require('@fullhuman/postcss-purgecss')({
+					content: ['./**/*.svelte'],
+					extractors: [
+						{
+							extractor: new SvelteExtractor(),
+
+							// Specify the file extensions to include when scanning for
+							// class names.
+							extensions: ['svelte'],
+						},
+					],
+					// Whitelist selectors to stop Purgecss from removing them from your CSS.
+					whitelist: ['html', 'body'],
+				}),
+	].filter(Boolean)
+}
 
 const preprocess = getPreprocessor({
 	transformers: {
 		postcss: {
-			plugins: postcssPlugins
+			plugins: postcssPlugins() // Don't need purgecss because Svelte handle unused css for you.
 		}
 	}
 });
@@ -80,12 +104,13 @@ export default {
 			}),
 			svelte({
 				generate: 'ssr',
-				dev
+				dev,
+				preprocess
 			}),
 			resolve(),
 			commonjs(),
 			postcss({
-				plugins: postcssPlugins,
+				plugins: postcssPlugins(!dev),
 				extract: path.resolve(__dirname, './static/global.css')
 			})
 		],
