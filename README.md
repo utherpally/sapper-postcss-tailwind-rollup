@@ -1,12 +1,11 @@
+*NOTE*: If you configure in existing project, you must hard reload browser if you can't see any changes. 
+
 # sapper-template
 
 The default [Sapper](https://github.com/sveltejs/sapper) template, with branches for Rollup and webpack. To clone it and get started:
 
 ```bash
-# for Rollup
-npx degit sveltejs/sapper-template#rollup my-app
-# for webpack
-npx degit sveltejs/sapper-template#webpack my-app
+npx degit langbamit/sapper-postcss-tailwind-rollup my-app
 cd my-app
 npm install # or yarn!
 npm run dev
