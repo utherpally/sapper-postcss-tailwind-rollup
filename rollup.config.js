@@ -32,7 +32,7 @@ const postcssPlugins = (purgecss=false) => {
 					content: ['./**/*.svelte'],
 					extractors: [
 						{
-							extractor: new SvelteExtractor(),
+							extractor: SvelteExtractor,
 
 							// Specify the file extensions to include when scanning for
 							// class names.
