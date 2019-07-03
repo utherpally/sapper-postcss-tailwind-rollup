@@ -11,6 +11,9 @@
     "cy:open": "cypress open",
     "test": "run-p --race dev cy:run"
   },
+  "browserslist": [
+    "last 3 version"
+  ],
   "dependencies": {
     "polka": "^0.5.0",
     "compression": "^1.7.1",
@@ -39,6 +42,6 @@
     "autoprefixer": "^9.5.1",
     "svelte-preprocess": "^2.9.0",
     "tailwindcss": "^1.0.1",
-    "@fullhuman/postcss-purgecss":"^1.2.0"
+    "@fullhuman/postcss-purgecss": "^1.2.0"
   }
 }
