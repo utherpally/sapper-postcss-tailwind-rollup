@@ -8,16 +8,18 @@ import config from "sapper/config/rollup.js";
 import pkg from "./package.json";
 import getPreprocessor from "svelte-preprocess";
 import postcss from "rollup-plugin-postcss";
+import PurgeSvelte from "purgecss-from-svelte";
 import path from "path";
 const mode = process.env.NODE_ENV;
 const dev = mode === "development";
 const legacy = !!process.env.SAPPER_LEGACY_BUILD;
 
-class SvelteExtractor {
-  static extract(content) {
-    return content.match(/[A-Za-z0-9-_:\/]+/g) || [];
-  }
-}
+const onwarn = (warning, onwarn) =>
+  (warning.code === "CIRCULAR_DEPENDENCY" &&
+    /[/\\]@sapper[/\\]/.test(warning.message)) ||
+  onwarn(warning);
+const dedupe = importee =>
+  importee === "svelte" || importee.startsWith("svelte/");
 
 const postcssPlugins = (purgecss = false) => {
   return [
@@ -28,19 +30,20 @@ const postcssPlugins = (purgecss = false) => {
     // Do not purge the CSS in dev mode to be able to play with classes in the browser dev-tools.
     purgecss &&
       require("@fullhuman/postcss-purgecss")({
-        content: ["./**/*.svelte"],
+        content: ["./**/*.svelte", "./src/template.html"],
         extractors: [
           {
-            extractor: SvelteExtractor,
+            extractor: PurgeSvelte,
 
             // Specify the file extensions to include when scanning for
             // class names.
-            extensions: ["svelte"]
+            extensions: ["svelte", "html"]
           }
         ],
         // Whitelist selectors to stop Purgecss from removing them from your CSS.
-        whitelist: ["html", "body"]
-      })
+        whitelist: []
+      }),
+    !dev && require("cssnano")
   ].filter(Boolean);
 };
 
@@ -67,7 +70,10 @@ export default {
         emitCss: true,
         preprocess
       }),
-      resolve(),
+      resolve({
+        browser: true,
+        dedupe
+      }),
       commonjs(),
 
       legacy &&
@@ -98,7 +104,8 @@ export default {
         terser({
           module: true
         })
-    ]
+    ],
+    onwarn
   },
 
   server: {
@@ -114,7 +121,9 @@ export default {
         dev,
         preprocess
       }),
-      resolve(),
+      resolve({
+        dedupe
+      }),
       commonjs(),
       postcss({
         plugins: postcssPlugins(!dev),
@@ -124,7 +133,8 @@ export default {
     external: Object.keys(pkg.dependencies).concat(
       require("module").builtinModules ||
         Object.keys(process.binding("natives"))
-    )
+    ),
+    onwarn
   },
 
   serviceworker: {
@@ -138,6 +148,7 @@ export default {
       }),
       commonjs(),
       !dev && terser()
-    ]
+    ],
+    onwarn
   }
 };
